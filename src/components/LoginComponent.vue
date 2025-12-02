@@ -1,24 +1,47 @@
 <template>
-    <el-dialog v-model="appState.loginBoxIsShow">
-        <div v-loading="loading">
-            <div v-if="appState.loggedIn">
-                <el-avatar :fit="cover" :src="avatarSrc" />
-                <el-text size="large">{{ nickname }}</el-text>
-                <el-text size="large">{{ sign }}</el-text>
+    <el-dialog v-model="appState.loginBoxIsShow" width="400px">
+        <div v-loading="loading" element-loading-text="加载中...">
+            <div v-if="appState.loggedIn" class="user-info">
+                <div class="avatar-container">
+                    <el-avatar :size="80" :src="avatarSrc" fit="cover" />
+                </div>
+                <div class="user-details">
+                    <el-text tag="h3" size="large" class="nickname">{{ nickname }}</el-text>
+                    <el-divider />
+                    <el-text class="sign-text">{{ sign || '这个人很懒，还没有签名~' }}</el-text>
+                    <div class="logout-btn">
+                        <el-button type="info" plain @click="logout">退出登录</el-button>
+                    </div>
+                </div>
             </div>
-            <div v-else>
-                <h3>输入你的访问令牌</h3>
-                <br>
-                <el-form style="max-width:300px;margin:auto">
+            <div v-else class="login-container">
+                <el-text tag="h3" size="large" class="login-title">输入你的访问令牌</el-text>
+                <el-divider />
+                <el-form :model="form" label-width="auto" style="margin-top: 20px;">
                     <el-form-item label="Access Token">
-                        <el-input v-model="appState.accessToken" placeholder="输入或粘贴访问令牌" />
-                        <div style="margin-top:6px">
-                            <br>
-                            <el-button size="" type="primary" @click="saveToken">保存令牌</el-button>
-                            <el-link style="margin-left:8px" href="https://next.bgm.tv/demo/access-token"
-                                target="_blank">获取令牌</el-link>
+                        <el-input v-model="appState.accessToken" placeholder="输入或粘贴访问令牌" type="password" show-password
+                            clearable @keyup.enter="saveToken" />
+                    </el-form-item>
+
+                    <el-form-item>
+                        <div style="display: flex; justify-content: space-between; width: 100%;">
+                            <el-button type="primary" @click="saveToken" :loading="loading">
+                                保存令牌
+                            </el-button>
+                            <el-link type="primary" href="https://next.bgm.tv/demo/access-token" target="_blank"
+                                :icon="Link">
+                                获取令牌
+                            </el-link>
                         </div>
                     </el-form-item>
+
+                    <el-alert title="令牌说明" type="info" :closable="false" show-icon style="margin-top: 10px;">
+                        <template #default>
+                            <el-text size="small">
+                                访问令牌用于验证你的身份，不会在本地保存密码
+                            </el-text>
+                        </template>
+                    </el-alert>
                 </el-form>
             </div>
         </div>
@@ -26,19 +49,60 @@
 </template>
 
 <script setup>
-import { ref, inject } from 'vue'
-import { ElNotification } from 'element-plus'
+import { ref, inject, onMounted } from 'vue'
+import { ElNotification, ElMessageBox } from 'element-plus'
+import { Link } from '@element-plus/icons-vue'
 import api from '../api/client.js'
+
 const appState = inject('appState')
-const saveToken = () => {
-    localStorage.setItem('accessToken', appState.accessToken)
-    loading.value = true
-    getUserInfo()
-}
 const loading = ref(false)
 const avatarSrc = ref('')
 const nickname = ref('')
 const sign = ref('')
+
+// 检查本地是否已有token
+onMounted(() => {
+    const savedToken = localStorage.getItem('accessToken')
+    if (savedToken && !appState.accessToken) {
+        appState.accessToken = savedToken
+        getUserInfo()
+    }
+})
+
+const saveToken = () => {
+    if (!appState.accessToken.trim()) {
+        ElNotification({
+            title: '提示',
+            message: '请输入访问令牌',
+            type: 'warning',
+        })
+        return
+    }
+
+    localStorage.setItem('accessToken', appState.accessToken)
+    loading.value = true
+    getUserInfo()
+}
+
+const logout = () => {
+    ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+    }).then(() => {
+        localStorage.removeItem('accessToken')
+        appState.accessToken = ''
+        appState.loggedIn = false
+        avatarSrc.value = ''
+        nickname.value = ''
+        sign.value = ''
+        ElNotification({
+            title: '已退出',
+            message: '你已成功退出登录',
+            type: 'success',
+        })
+    })
+}
 
 const tokenInvalid = () => {
     ElNotification({
@@ -51,20 +115,71 @@ const tokenInvalid = () => {
 const getUserInfo = async () => {
     try {
         const response = await api.get('/v0/me', { useToken: true })
-
-        // 响应处理
         const data = response.data
-        console.log('用户信息:', data)
+
         appState.loggedIn = true
-        loading.value = false
         avatarSrc.value = data.avatar.large
         nickname.value = data.nickname
         sign.value = data.sign
+
+        ElNotification({
+            title: '登录成功',
+            message: `欢迎回来，${data.nickname}!`,
+            type: 'success',
+        })
     } catch (error) {
         console.error('获取用户信息失败:', error)
         appState.loggedIn = false
-        loading.value = false
+        localStorage.removeItem('accessToken')
         tokenInvalid()
+    } finally {
+        loading.value = false
     }
 }
 </script>
+
+<style scoped>
+.user-info {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.avatar-container {
+    margin-bottom: 20px;
+}
+
+.nickname {
+    margin: 10px 0;
+    color: #409EFF;
+}
+
+.sign-text {
+    color: #666;
+    line-height: 1.6;
+    margin: 10px 0;
+    display: block;
+    min-height: 60px;
+}
+
+.logout-btn {
+    margin-top: 20px;
+}
+
+.login-container {
+    padding: 10px 0;
+}
+
+.login-title {
+    text-align: center;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+:deep(.el-dialog__body) {
+    padding: 20px 25px;
+}
+
+:deep(.el-divider--horizontal) {
+    margin: 16px 0;
+}
+</style>
