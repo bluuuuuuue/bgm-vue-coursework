@@ -20,6 +20,8 @@ import HeaderComponent from './components/HeaderComponent.vue'
 const appState = reactive({
     loginBoxIsShow: false,
     loggedIn: false,
+    accessToken: '',
+    username: ''
 })
 
 provide('appState', appState)
