@@ -38,7 +38,7 @@
                     <el-alert title="令牌说明" type="info" :closable="false" show-icon style="margin-top: 10px;">
                         <template #default>
                             <el-text size="small">
-                                访问令牌用于验证你的身份，不会在本地保存密码
+                                访问令牌将保存在浏览器本地，仅与 bangumi API 通信时使用。请妥善保管，不要泄露给他人。
                             </el-text>
                         </template>
                     </el-alert>
