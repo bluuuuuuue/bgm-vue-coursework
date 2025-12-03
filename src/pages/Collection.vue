@@ -3,6 +3,7 @@
         <el-card>
             <template #header>
                 <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                    <span>收藏夹</span>
                     <el-select v-model="collectionType" placeholder="收藏类型" style="width:180px">
                         <el-option label="全部" value="all" />
                         <el-option label="想看" value="1" />
