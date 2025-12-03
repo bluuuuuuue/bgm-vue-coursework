@@ -1,5 +1,5 @@
 <template>
-    <el-dialog v-model="visibleInner" title="收藏条目" width="500px">
+    <el-dialog v-model="visibleInner" :title="dialogTitle" width="500px">
         <div v-loading="loading" element-loading-text="加载中...">
             <el-form label-width="80px">
                 <el-form-item label="状态">
@@ -8,7 +8,7 @@
                     </div>
                 </el-form-item>
                 <el-form-item label="评分">
-                    <el-space :size="size" spacer="  ">
+                    <el-space :size="15">
                         <el-rate v-model="rate" :max="10" />
                         <el-text type="primary">{{ rate == 0 ? '未评分' : rate }}</el-text>
                         <el-button type="danger" :icon="Delete" circle @click="rate = 0" />
@@ -27,7 +27,7 @@
 </template>
 
 <script setup>
-import { ref, watch, inject } from 'vue'
+import { ref, watch, inject, computed } from 'vue'
 import { ElNotification } from 'element-plus'
 import api from '../api/client'
 import { Delete } from '@element-plus/icons-vue'
@@ -45,6 +45,9 @@ const loading = ref(false)
 const saving = ref(false)
 const rate = ref(0)
 const comment = ref('')
+const subjectName = ref('')
+const dialogTitle = computed(() => subjectName.value ? `收藏条目 · ${subjectName.value}` : '收藏条目')
+
 
 const STATUS_OPTIONS = [
     { label: '想看', value: 1 },
@@ -89,6 +92,7 @@ const epStatus = ref('')
 const epStatusList = getLabelList()
 
 watch(() => props.modelValue, (v) => {
+    subjectName.value = ''
     visibleInner.value = v
     if (v) load()
 })
@@ -103,6 +107,7 @@ const load = async () => {
         rate.value = data?.rate ?? 0
         comment.value = data?.comment ?? ''
         epStatus.value = getLabelByValue(data?.type) || ''
+        subjectName.value = data?.subject?.name_cn || data?.subject?.name || ''
     } catch (error) {
         ElNotification({ title: '错误', message: error?.response?.data?.message || '加载失败', type: 'error' })
     } finally {
