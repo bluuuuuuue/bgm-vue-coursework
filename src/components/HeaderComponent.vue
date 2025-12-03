@@ -12,10 +12,13 @@
                 <el-menu-item index="/collection">收藏夹</el-menu-item>
             </el-menu>
         </el-col>
-        <el-col :span="4">
+        <el-col :span="2">
             <el-avatar v-if="appState.loggedIn" @click="appState.loginBoxIsShow = true" :src="avatarSrc"></el-avatar>
             <el-button v-else :type="loginButtonType" @click="appState.loginBoxIsShow = !appState.loginBoxIsShow">{{
                 loginButtonText }}</el-button>
+        </el-col>
+        <el-col :span="2">
+            <el-switch v-model="isDark" :active-action-icon="Moon" :inactive-action-icon="Sunny" size="large" />
         </el-col>
     </el-row>
     <LoginComponent />
@@ -23,6 +26,12 @@
 <script setup>
 import LoginComponent from './LoginComponent.vue'
 import { inject, ref, watch } from 'vue'
+import { useDark, useToggle } from '@vueuse/core'
+import { Sunny, Moon } from '@element-plus/icons-vue'
+
+const isDark = useDark()
+const toggleDark = useToggle(isDark)
+
 
 const loginButtonText = ref('未登入')
 const loginButtonType = ref('info')
