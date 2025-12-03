@@ -60,4 +60,8 @@ watch(() => appState.loggedIn, (newVal) => {
 .solid-border-bottom {
     border-bottom: 1px solid #d0d0d0;
 }
+
+.el-menu.el-menu--horizontal {
+    background-color: transparent !important;
+}
 </style>
