@@ -126,7 +126,7 @@ const getUserInfo = async () => {
         const data = response.data
 
         appState.loggedIn = true
-        appState.username = data.username
+        appState.userInfo = data
         avatarSrc.value = data.avatar.large
         nickname.value = data.nickname
         sign.value = data.sign

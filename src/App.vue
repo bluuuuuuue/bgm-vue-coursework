@@ -21,7 +21,7 @@ const appState = reactive({
     loginBoxIsShow: false,
     loggedIn: false,
     accessToken: '',
-    username: ''
+    userInfo: null
 })
 
 provide('appState', appState)

@@ -59,27 +59,27 @@
     </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, computed, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElNotification } from 'element-plus'
 import EditRatingDialog from '../components/EditRatingDialog.vue'
-import api from '../api/client'
+import api from '../api/client.js'
 
-const appState = inject('appState') as any
+const appState = inject('appState')
 const router = useRouter()
 const route = useRoute()
 
 const loading = ref(false)
 const loadingMore = ref(false)
-const results = ref<any[]>([])
+const results = ref([])
 const emptyDescription = ref('')
 const hasMore = ref(true)
 const limit = 30
 const offset = ref(0)
 
-const collectionType = ref<string>((route.query.type as string) || 'all')
-const subjectType = ref<number | 'all'>(route.query.subject_type ? Number(route.query.subject_type as string) : 'all')
+const collectionType = ref(route.query.type || 'all')
+const subjectType = ref(route.query.subject_type ? Number(route.query.subject_type) : 'all')
 const subjectTypeOptions = [
     { label: '书籍', value: 1 },
     { label: '动画', value: 2 },
@@ -91,7 +91,7 @@ const subjectTypeOptions = [
 const visibleItems = computed(() => results.value)
 
 const syncQuery = () => {
-    const q: any = { type: collectionType.value }
+    const q = { type: collectionType.value }
     if (subjectType.value !== 'all') q.subject_type = String(subjectType.value)
     router.replace({ path: '/collection', query: q })
 }
@@ -101,7 +101,7 @@ watch([collectionType, subjectType], () => {
     reload(true)
 })
 
-const imgSrc = (item: any) => item.subject?.images?.large || item.subject?.images?.grid
+const imgSrc = (item) => item.subject?.images?.large || item.subject?.images?.grid
 
 const setEmpty = () => {
     if (!appState?.loggedIn) emptyDescription.value = '请先登录以查看收藏'
@@ -109,13 +109,13 @@ const setEmpty = () => {
 }
 
 const load = async () => {
-    if (!appState?.username) { setEmpty(); return }
+    if (!appState.userInfo?.username) { setEmpty(); return }
     loading.value = true
     try {
-        const params: any = { limit, offset: offset.value }
+        const params = { limit, offset: offset.value }
         if (collectionType.value !== 'all') params.type = Number(collectionType.value)
         if (subjectType.value !== 'all') params.subject_type = Number(subjectType.value)
-        const { data } = await api.get(`/v0/users/${appState.username}/collections`, {
+        const { data } = await api.get(`/v0/users/${appState.userInfo.username}/collections`, {
             params,
             useToken: true
         })
@@ -125,7 +125,7 @@ const load = async () => {
         const total = data?.total ?? list.length
         hasMore.value = results.value.length < total
         if (results.value.length === 0) setEmpty()
-    } catch (error: any) {
+    } catch (error) {
         ElNotification({ title: '错误', message: error?.response?.data?.message || '加载失败', type: 'error' })
         setEmpty()
     } finally {
@@ -152,12 +152,12 @@ const loadMore = async () => {
     }
 }
 
-const toDetail = (id: number) => router.push(`/subject/${id}`)
+const toDetail = (id) => router.push(`/subject/${id}`)
 
 const editVisible = ref(false)
-const editingId = ref<number>(0)
-const openEdit = (item: any) => { editingId.value = item.subject_id; editVisible.value = true }
-const onSaved = (payload: { rate: number, comment: string }) => {
+const editingId = ref(0)
+const openEdit = (item) => { editingId.value = item.subject_id; editVisible.value = true }
+const onSaved = (payload) => {
     const idx = results.value.findIndex(i => i.subject_id === editingId.value)
     if (idx >= 0) {
         results.value[idx].rate = payload.rate
@@ -165,8 +165,8 @@ const onSaved = (payload: { rate: number, comment: string }) => {
     }
 }
 
-watch([() => appState.loggedIn, () => appState.username], ([loggedIn, username]) => {
-    if (loggedIn && username) reload(true)
+watch([() => appState.loggedIn, () => appState.userInfo], ([loggedIn, userInfo]) => {
+    if (loggedIn && userInfo?.username) reload(true)
     else setEmpty()
 }, { immediate: true })
 </script>

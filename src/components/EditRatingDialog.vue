@@ -17,22 +17,23 @@
     </el-dialog>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, watch, inject } from 'vue'
 import { ElNotification } from 'element-plus'
 import api from '../api/client'
 
-const props = defineProps<{ subjectId: number, modelValue: boolean }>()
-const emit = defineEmits<{
-    (e: 'update:modelValue', v: boolean): void
-    (e: 'saved', payload: { rate: number, comment: string }): void
-}>()
+const props = defineProps({
+    subjectId: Number,
+    modelValue: Boolean
+})
 
-const appState = inject('appState') as any
+const emit = defineEmits(['update:modelValue', 'saved'])
+
+const appState = inject('appState')
 const visibleInner = ref(false)
 const loading = ref(false)
 const saving = ref(false)
-const rate = ref<number>(0)
+const rate = ref(0)
 const comment = ref('')
 
 watch(() => props.modelValue, (v) => {
@@ -43,13 +44,13 @@ watch(() => props.modelValue, (v) => {
 watch(visibleInner, (v) => emit('update:modelValue', v))
 
 const load = async () => {
-    if (!appState?.username) return
+    if (!appState.userInfo?.username) return
     loading.value = true
     try {
-        const { data } = await api.get(`/v0/users/${appState.username}/collections/${props.subjectId}`, { useToken: true })
+        const { data } = await api.get(`/v0/users/${appState.userInfo.username}/collections/${props.subjectId}`, { useToken: true })
         rate.value = data?.rate ?? 0
         comment.value = data?.comment ?? ''
-    } catch (error: any) {
+    } catch (error) {
         ElNotification({ title: '错误', message: error?.response?.data?.message || '加载失败', type: 'error' })
     } finally {
         loading.value = false
@@ -68,7 +69,7 @@ const save = async () => {
         ElNotification({ title: '成功', message: '已保存评分与评价', type: 'success' })
         emit('saved', { rate: rate.value, comment: comment.value })
         visibleInner.value = false
-    } catch (error: any) {
+    } catch (error) {
         ElNotification({ title: '错误', message: error?.response?.data?.message || '保存失败', type: 'error' })
     } finally {
         saving.value = false

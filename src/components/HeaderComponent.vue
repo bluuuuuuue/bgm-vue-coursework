@@ -13,7 +13,8 @@
             </el-menu>
         </el-col>
         <el-col :span="4">
-            <el-button :type="loginButtonType" @click="appState.loginBoxIsShow = !appState.loginBoxIsShow">{{
+            <el-avatar v-if="appState.loggedIn" @click="appState.loginBoxIsShow = true" :src="avatarSrc"></el-avatar>
+            <el-button v-else :type="loginButtonType" @click="appState.loginBoxIsShow = !appState.loginBoxIsShow">{{
                 loginButtonText }}</el-button>
         </el-col>
     </el-row>
@@ -25,6 +26,7 @@ import { inject, ref, watch } from 'vue'
 
 const loginButtonText = ref('未登入')
 const loginButtonType = ref('info')
+const avatarSrc = ref('')
 
 const appState = inject('appState')
 
@@ -33,9 +35,11 @@ watch(() => appState.loggedIn, (newVal) => {
     if (newVal) {
         loginButtonText.value = '已登入'
         loginButtonType.value = 'success'
+        avatarSrc.value = appState.userInfo?.avatar.large || ''
     } else {
         loginButtonText.value = '未登入'
         loginButtonType.value = 'info'
+        avatarSrc.value = ''
     }
 }, { immediate: true })
 </script>
