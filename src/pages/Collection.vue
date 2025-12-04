@@ -30,11 +30,11 @@
                             <el-card shadow="hover" style="margin-bottom:12px; position:relative"
                                 @click="openEdit(item)">
                                 <el-row :gutter="8">
-                                    <el-col :span="10">
+                                    <el-col :span="8">
                                         <el-image :src="imgSrc(item)" fit="cover" style="width:100%;height:140px"
                                             lazy />
                                     </el-col>
-                                    <el-col :span="14">
+                                    <el-col :span="16">
                                         <div style="font-weight:600">{{ item.subject?.name_cn || item.subject?.name }}
                                         </div>
                                         <div style="color:#666;margin:4px 0">站内评分 {{ item.subject?.score ?? '-' }}</div>
