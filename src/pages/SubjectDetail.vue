@@ -1,166 +1,152 @@
 <template>
-  <el-card>
-  <div class="subject-detail-page">
-    <!-- 骨架屏加载状态 -->
-    <div v-if="loading" class="loading-container">
-      <el-skeleton class="hero-skeleton" animated>
+  <div class="hybrid-page">
+
+    <!-- 加载骨架屏 -->
+    <div v-if="loading" class="loading-box">
+      <el-skeleton animated>
         <template #template>
-          <div style="display: flex; gap: 24px; padding: 20px;">
-            <el-skeleton-item variant="image" style="width: 240px; height: 360px; border-radius: 8px" />
-            <div style="flex: 1">
-              <el-skeleton-item variant="h1" style="width: 50%; margin-bottom: 20px" />
-              <el-skeleton-item variant="text" style="margin-bottom: 10px" :rows="3" />
-              <el-skeleton-item variant="text" style="width: 30%" />
+          <div style="height: 380px; background: #e0e0e0;"></div>
+          <div style="max-width: 1140px; margin: -100px auto 0; padding: 0 20px; display: flex; gap: 30px">
+            <el-skeleton-item variant="image" style="width: 260px; height: 360px; border-radius: 12px" />
+            <div style="flex: 1; padding-top: 120px">
+              <el-skeleton-item variant="h1" style="width: 40%" />
+              <el-skeleton-item variant="text" :rows="4" style="margin-top: 20px" />
             </div>
           </div>
         </template>
       </el-skeleton>
     </div>
 
-    <div v-else-if="subject" class="content-container">
-      <!-- 1. 顶部沉浸式区域 (Hero Section) -->
-      <div class="hero-section">
-        <!-- 模糊背景 -->
-        <div class="hero-bg" :style="{ backgroundImage: `url(${getCoverImage(subject)})` }"></div>
-        <div class="hero-overlay"></div>
+    <div v-else-if="subject" class="main-wrapper">
 
-        <div class="hero-content">
-          <!-- 左侧海报 -->
-          <div class="poster-wrapper">
-            <el-image 
-              :src="getCoverImage(subject)" 
-              fit="cover" 
-              class="main-poster"
-              :preview-src-list="[getCoverImage(subject)]"
-            />
-          </div>
+      <!-- ================= 1. 顶部沉浸区 ================= -->
+      <div class="hero-header">
+        <!-- 动态模糊背景 -->
+        <div class="hero-backdrop" :style="{ backgroundImage: `url(${getCoverImage(subject)})` }"></div>
+        <div class="hero-mask"></div>
 
-          <!-- 右侧主要信息 -->
-          <div class="info-wrapper">
-            <div class="header-actions">
-              <el-tag effect="dark" round color="#fb7299" style="border:none">{{ mapType(subject?.type) }}</el-tag>
-              <el-button round size="small" @click="toComments" icon="ChatLineSquare">
-                查看评论
-              </el-button>
+        <div class="hero-container">
+          <div class="hero-content">
+            <!-- 核心信息 -->
+            <div class="hero-meta">
+              <el-tag effect="dark" round color="rgba(255,255,255,0.2)" style="border:none; color:#fff">
+                {{ mapType(subject?.type) }}
+              </el-tag>
+              <span>{{ subject?.air_date?.slice(0, 4) || '年代未知' }}</span>
+              <span>{{ subject?.eps_count ?? subject?.eps ?? '-' }} 话</span>
             </div>
 
-            <h1 class="title">{{ subject?.name_cn || subject?.name }}</h1>
-            <h2 v-if="subject?.name_cn && subject?.name !== subject?.name_cn" class="subtitle">
-              {{ subject?.name }}
+            <h1 class="hero-title">{{ subject?.name_cn || subject?.name }}</h1>
+            <h2 class="hero-subtitle" v-if="subject?.name_cn && subject?.name !== subject?.name_cn">{{ subject?.name }}
             </h2>
 
-            <!-- 评分与排名数据块 -->
-            <div class="stats-row">
-              <div class="stat-item score">
-                <span class="label">评分</span>
-                <span class="value">{{ subject?.rating?.score ?? 'N/A' }}</span>
-                <el-rate
-                  v-model="ratingValue"
-                  disabled
-                  show-score
-                  text-color="#ff9900"
-                  score-template=""
-                  :max="10"
-                  class="custom-rate"
-                />
+            <!-- 评分玻璃条 -->
+            <div class="glass-rating-bar">
+              <div class="rating-block">
+                <span class="score">{{ subject?.rating?.score ?? '0.0' }}</span>
+                <div class="stars-wrapper">
+                  <el-rate v-model="ratingValue" disabled text-color="#ff9900"
+                    disabled-void-color="rgba(255,255,255,0.3)" score-template="" :max="10" />
+                  <span class="rank-text">Rank #{{ subject?.rank ?? '-' }}</span>
+                </div>
               </div>
-              <el-divider direction="vertical" class="stat-divider"/>
-              <div class="stat-item rank">
-                <span class="label">排名</span>
-                <span class="value">#{{ subject?.rank ?? '-' }}</span>
-              </div>
-            </div>
 
-            <!-- 简介 -->
-            <div class="summary-box">
-              <p class="summary-text">{{ subject?.summary || '暂无简介' }}</p>
+              <div class="divider"></div>
+
+              <!-- 按钮组：已删除评论按钮，只保留收藏 -->
+              <div class="action-group">
+                <button class="glass-btn primary">
+                  <el-icon>
+                    <Star />
+                  </el-icon> 收藏
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 2. 详情内容区域 (白色背景) -->
-      <div class="main-body">
-        <el-row :gutter="24">
-          <!-- 左侧：主要信息流 -->
-          <el-col :span="16" :xs="24">
-            
-            <!-- 详细参数 -->
-            <el-card shadow="hover" class="detail-card info-grid-card">
-              <template #header><span class="section-title">放送信息</span></template>
-              <el-descriptions :column="2" border size="large">
-                <el-descriptions-item label="话数">{{ subject?.eps_count ?? subject?.eps ?? '-' }}</el-descriptions-item>
-                <el-descriptions-item label="开播日期">{{ subject?.air_date || '-' }}</el-descriptions-item>
-                <el-descriptions-item label="放送日">{{ subject?.air_weekday || '-' }}</el-descriptions-item>
-                <el-descriptions-item label="类型">{{ mapType(subject?.type) }}</el-descriptions-item>
-              </el-descriptions>
-            </el-card>
+      <!-- ================= 2. 下方内容区 ================= -->
+      <div class="body-container">
+        <div class="layout-grid">
 
-            <!-- 角色列表 (改造成卡片网格) -->
-            <div class="section-block">
-              <h3 class="section-header">角色 Character</h3>
-              <div v-if="subject?.crt?.length || subject?.characters?.length" class="card-grid">
-                <div 
-                  v-for="(item, index) in (subject?.crt || subject?.characters)" 
-                  :key="index" 
-                  class="mini-card"
-                >
-                  <!-- 假设 API 有 images 字段，如果没有则显示默认图标 -->
-                  <el-avatar 
-                    :size="50" 
-                    :src="item.images?.grid || item.image" 
-                    shape="square"
-                    class="card-avatar"
-                  >
-                    {{ item.name.charAt(0) }}
+          <!-- 左侧：跨界海报 -->
+          <div class="poster-sidebar">
+            <div class="poster-wrapper">
+              <el-image :src="getCoverImage(subject)" fit="cover" class="poster-image"
+                :preview-src-list="[getCoverImage(subject)]" />
+            </div>
+
+            <!-- 侧边信息栏 -->
+            <div class="sidebar-info">
+              <h3 class="sidebar-title">放送信息</h3>
+              <ul class="info-list">
+                <li><span class="label">放送日</span> <span class="val">{{ subject?.air_weekday || '未知' }}</span></li>
+                <li><span class="label">开播</span> <span class="val">{{ subject?.air_date || '-' }}</span></li>
+                <li><span class="label">话数</span> <span class="val">{{ subject?.eps_count ?? subject?.eps ?? '-'
+                    }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 右侧：主要内容 -->
+          <div class="content-main">
+            <!-- 简介 -->
+            <div class="content-section">
+              <h3 class="section-title">简介 <small>Story</small></h3>
+              <p class="summary-text">{{ subject?.summary || '暂无简介' }}</p>
+            </div>
+
+            <!-- 角色 -->
+            <div class="content-section">
+              <h3 class="section-title">角色 <small>Characters</small></h3>
+              <div class="char-grid" v-if="getCharacters(subject).length">
+                <div v-for="(char, idx) in getCharacters(subject)" :key="idx" class="char-card">
+                  <el-avatar :size="50" :src="char.images?.grid || char.image" shape="circle" class="char-avatar">
+                    {{ char.name[0] }}
                   </el-avatar>
-                  <div class="card-info">
-                    <div class="card-name" :title="item.name">{{ item.name }}</div>
-                    <div class="card-role">{{ item.role_name }}</div>
+                  <div class="char-details">
+                    <div class="char-name" :title="char.name">{{ char.name }}</div>
+                    <div class="char-role">{{ char.role_name }}</div>
                   </div>
                 </div>
               </div>
-              <el-empty v-else description="暂无角色信息" :image-size="60" />
+              <el-empty v-else description="暂无角色" :image-size="60" />
             </div>
 
-          </el-col>
-
-          <!-- 右侧：侧边栏 (制作人员等) -->
-          <el-col :span="8" :xs="24">
-            <el-card shadow="hover" class="detail-card staff-card">
-              <template #header><span class="section-title">制作人员 Staff</span></template>
-              <div v-if="subject?.staff?.length" class="staff-list">
-                <div v-for="(staff, index) in subject?.staff" :key="index" class="staff-row">
-                  <div class="staff-role">{{ staff.role_name }}</div>
-                  <div class="staff-name">{{ staff.name }}</div>
+            <!-- Staff -->
+            <div class="content-section">
+              <h3 class="section-title">制作人员 <small>Staff</small></h3>
+              <div class="staff-grid" v-if="subject?.staff?.length">
+                <div v-for="(s, i) in subject?.staff" :key="i" class="staff-item">
+                  <span class="staff-role">{{ s.role_name }}</span>
+                  <span class="staff-name">{{ s.name }}</span>
                 </div>
               </div>
               <el-empty v-else description="暂无制作信息" :image-size="60" />
-            </el-card>
-          </el-col>
-        </el-row>
+            </div>
+
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
-  </el-card>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ChatLineSquare } from '@element-plus/icons-vue' // 需要确保安装了 icons
+import { useRoute } from 'vue-router'
+// 移除了 ChatLineSquare，只保留 Star
+import { Star } from '@element-plus/icons-vue'
 import api from '../api/client'
 
 const route = useRoute()
-const router = useRouter()
 
 const subject = ref<any>(null)
 const loading = ref(false)
-
-// 计算属性：用于 el-rate 组件，将 API 的评分转换为数字
-const ratingValue = computed(() => {
-  return subject.value?.rating?.score ? Number(subject.value.rating.score) : 0
-})
+const ratingValue = computed(() => subject.value?.rating?.score ? Number(subject.value.rating.score) : 0)
 
 const load = async () => {
   loading.value = true
@@ -174,248 +160,334 @@ const load = async () => {
   }
 }
 
-// 辅助函数：安全获取图片
-const getCoverImage = (sub: any) => {
-  return sub?.images?.large || sub?.images?.common || sub?.images?.grid || ''
-}
-
-const toComments = () => router.push(`/subject/${route.params.id}/comments`)
-
-const mapType = (t: number | undefined) => {
-  const map: Record<number, string> = { 
-    1: '书籍', 2: '动画', 3: '音乐', 4: '游戏', 6: '三次元' 
-  }
-  return map[t ?? 0] || '未知'
-}
+const getCoverImage = (sub: any) => sub?.images?.large || sub?.images?.common || sub?.images?.grid || ''
+const getCharacters = (sub: any) => sub?.crt || sub?.characters || []
+const mapType = (t: number | undefined) => ({ 1: '书籍', 2: '动画', 3: '音乐', 4: '游戏', 6: '三次元' } as any)[t ?? 0] || '条目'
 
 onMounted(load)
 </script>
 
 <style scoped>
-/* 全局容器 */
-.subject-detail-page {
-  background-color: #f4f5f7;
+/* 全局设定 */
+.hybrid-page {
+  background-color: #f6f7f8;
   min-height: 100vh;
-  padding-bottom: 40px;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
 }
 
-.loading-container {
-  padding: 20px;
-  max-width: 1200px;
+/* 核心布局容器 */
+.hero-container,
+.body-container {
+  max-width: 1140px;
   margin: 0 auto;
-  background: #fff;
+  padding: 0 20px;
+  position: relative;
+  box-sizing: border-box;
 }
 
-/* ================= Hero Section (顶部沉浸区) ================= */
-.hero-section {
+/* ================= Header ================= */
+.hero-header {
   position: relative;
+  height: 420px;
   width: 100%;
-  height: 420px; /* 固定高度 */
+  display: flex;
+  align-items: center;
   overflow: hidden;
   color: #fff;
-  display: flex;
-  justify-content: center;
 }
 
-/* 模糊背景 */
-.hero-bg {
+.hero-backdrop {
   position: absolute;
   top: -10%;
   left: -10%;
   width: 120%;
   height: 120%;
   background-size: cover;
-  background-position: center;
-  filter: blur(20px) brightness(0.6); /* 模糊且变暗 */
+  background-position: center 20%;
+  filter: blur(35px) brightness(0.5);
   z-index: 1;
 }
 
-/* 渐变遮罩 */
-.hero-overlay {
+.hero-mask {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.8) 100%);
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.1) 100%);
   z-index: 2;
 }
 
-/* 内容容器 */
-.hero-content {
-  position: relative;
+.hero-container {
   z-index: 3;
-  max-width: 1200px;
-  width: 100%;
-  padding: 30px 20px;
-  display: flex;
-  align-items: flex-end; /* 底部对齐 */
-  gap: 30px;
-}
-
-/* 海报 */
-.poster-wrapper {
-  flex-shrink: 0;
-  width: 220px;
-  height: 310px;
-  border-radius: 8px;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.5);
-  overflow: hidden;
-  border: 3px solid #fff;
-  transform: translateY(40px); /* 让海报稍微突出到白色区域 */
-  background: #eee;
-}
-.main-poster {
   width: 100%;
   height: 100%;
-}
-
-/* 右侧信息 */
-.info-wrapper {
-  flex: 1;
-  padding-bottom: 10px;
-  display: flex;
-  flex-direction: column;
-}
-
-.header-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.title {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 700;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-}
-.subtitle {
-  margin: 5px 0 15px;
-  font-size: 16px;
-  color: rgba(255,255,255,0.8);
-  font-weight: 400;
-}
-
-/* 评分区域 */
-.stats-row {
   display: flex;
   align-items: center;
-  margin-bottom: 15px;
-}
-.stat-item {
-  display: flex;
-  flex-direction: column;
-}
-.stat-item .label {
-  font-size: 12px;
-  color: rgba(255,255,255,0.6);
-  text-transform: uppercase;
-}
-.stat-item.score .value {
-  font-size: 32px;
-  font-weight: bold;
-  color: #ffcc00;
-  line-height: 1;
-}
-.stat-item.rank .value {
-  font-size: 24px;
-  font-weight: bold;
-}
-.stat-divider {
-  height: 30px;
-  border-color: rgba(255,255,255,0.3);
-  margin: 0 20px;
-}
-/* 强制覆盖 el-rate 样式 */
-.custom-rate :deep(.el-rate__icon) {
-  font-size: 14px;
-  margin-right: 2px;
 }
 
-.summary-box {
-  background: rgba(0,0,0,0.3);
-  padding: 12px;
-  border-radius: 6px;
-  backdrop-filter: blur(4px);
+/* 
+  左侧 padding 预留给海报 
+  260px (海报宽) + 40px (Gap) = 300px
+*/
+.hero-content {
+  padding-left: 300px;
+  width: 100%;
+  box-sizing: border-box;
 }
-.summary-text {
-  margin: 0;
+
+.hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: 14px;
-  line-height: 1.6;
-  color: #eee;
+  opacity: 0.9;
+  margin-bottom: 12px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.hero-title {
+  font-size: 44px;
+  font-weight: 800;
+  margin: 0 0 5px 0;
+  line-height: 1.1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
   display: -webkit-box;
-  -webkit-line-clamp: 3; /* 最多显示3行 */
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* ================= Main Body (白色区域) ================= */
-.main-body {
-  max-width: 1200px;
-  margin: 60px auto 0; /* 留出空间给突出的海报 */
-  padding: 0 20px;
+.hero-subtitle {
+  font-size: 20px;
+  font-weight: 400;
+  margin: 0 0 25px 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* 玻璃评分条 */
+.glass-rating-bar {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 12px 24px;
+  gap: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.rating-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.score {
+  font-size: 38px;
+  font-weight: bold;
+  color: #ffcc00;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.stars-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.rank-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 2px;
+}
+
+.divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.action-group {
+  display: flex;
+  gap: 12px;
+}
+
+.glass-btn {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  padding: 8px 24px;
+  /* 稍微加宽一点 */
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.glass-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Primary 样式 (白色实心) */
+.glass-btn.primary {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+  font-weight: 600;
+}
+
+.glass-btn.primary:hover {
+  background: #eee;
+}
+
+/* ================= Body ================= */
+.layout-grid {
+  display: flex;
+  gap: 40px;
+  position: relative;
+  z-index: 4;
+}
+
+/* 左侧海报区 */
+.poster-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+}
+
+.poster-wrapper {
+  width: 260px;
+  height: 364px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  border: 4px solid #fff;
+  margin-top: -220px;
+  /* 负边距上浮 */
+  background: #e0e0e0;
+  position: relative;
+}
+
+.poster-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sidebar-info {
+  margin-top: 24px;
+}
+
+.sidebar-title {
+  font-size: 16px;
+  border-left: 4px solid #fb7299;
+  padding-left: 10px;
+  margin-bottom: 12px;
+}
+
+.info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.info-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+.info-list .label {
+  color: #888;
+}
+
+.info-list .val {
+  font-weight: 500;
+  color: #333;
+}
+
+/* 右侧内容区 */
+.content-main {
+  flex: 1;
+  padding-top: 20px;
+  padding-bottom: 60px;
+  min-width: 0;
+}
+
+.content-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  margin-bottom: 24px;
 }
 
 .section-title {
-  font-weight: bold;
-  border-left: 4px solid #409eff;
-  padding-left: 10px;
-  font-size: 16px;
-}
-
-.section-header {
-  margin: 30px 0 16px;
   font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 16px;
   color: #333;
-  font-weight: 600;
   display: flex;
-  align-items: center;
-}
-.section-header::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  background: #fb7299;
-  border-radius: 50%;
-  margin-right: 8px;
+  align-items: baseline;
+  gap: 8px;
 }
 
-.detail-card {
-  margin-bottom: 24px;
-  border-radius: 8px;
-  border: none;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+.section-title small {
+  font-size: 13px;
+  color: #bbb;
+  font-weight: 400;
+  text-transform: uppercase;
 }
 
-/* 角色卡片网格 */
-.card-grid {
+.summary-text {
+  color: #555;
+  line-height: 1.8;
+  font-size: 15px;
+  text-align: justify;
+}
+
+/* Grid 样式 */
+.char-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
 }
-.mini-card {
-  background: #fff;
-  border-radius: 6px;
-  padding: 10px;
+
+.char-card {
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid #ebeef5;
-  transition: all 0.2s;
+  background: #f9f9f9;
+  padding: 10px;
+  border-radius: 8px;
+  transition: transform 0.2s;
+  border: 1px solid transparent;
 }
-.mini-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  border-color: #d9ecff;
+
+.char-card:hover {
+  transform: translateY(-3px);
+  background: #fff;
+  border-color: #eee;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
 }
-.card-info {
-  flex: 1;
+
+.char-avatar {
+  flex-shrink: 0;
+  background: #eee;
+}
+
+.char-details {
   overflow: hidden;
 }
-.card-name {
+
+.char-name {
   font-size: 13px;
   font-weight: bold;
   color: #333;
@@ -423,68 +495,39 @@ onMounted(load)
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.card-role {
+
+.char-role {
   font-size: 12px;
   color: #999;
   margin-top: 2px;
 }
 
-/* 制作人员列表 */
-.staff-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.staff-row {
-  display: flex;
-  justify-content: space-between;
-  padding-bottom: 8px;
-  border-bottom: 1px dashed #eee;
-  font-size: 13px;
-}
-.staff-row:last-child {
-  border-bottom: none;
-}
-.staff-role {
-  color: #909399;
-}
-.staff-name {
-  font-weight: 500;
-  color: #303133;
+.staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px 20px;
 }
 
-/* 移动端适配 */
-@media screen and (max-width: 768px) {
-  .hero-section {
-    height: auto;
-    padding-bottom: 20px;
-  }
-  .hero-content {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-  .poster-wrapper {
-    width: 160px;
-    height: 220px;
-    transform: translateY(0);
-    margin-bottom: 15px;
-  }
-  .info-wrapper {
-    width: 100%;
-  }
-  .header-actions {
-    justify-content: center;
-    gap: 10px;
-  }
-  .stats-row {
-    justify-content: center;
-  }
-  .main-body {
-    margin-top: 20px;
-  }
-  .summary-text {
-    -webkit-line-clamp: 5;
-  }
+.staff-item {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.staff-role {
+  color: #fb7299;
+  background: rgba(251, 114, 153, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.staff-name {
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
