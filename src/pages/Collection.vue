@@ -168,7 +168,10 @@ const onSaved = (payload) => {
 
 watch([() => appState.loggedIn, () => appState.userInfo], ([loggedIn, userInfo]) => {
     if (loggedIn && userInfo?.username) reload(true)
-    else setEmpty()
+    else {
+        results.value = []
+        setEmpty()
+    }
 }, { immediate: true })
 </script>
 
